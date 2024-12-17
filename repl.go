@@ -5,22 +5,47 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/chrispaul1/pokedexcli/internal/pokecache"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*Config, *pokecache.Cache, string, string) error
 }
 
 var commands map[string]cliCommand
 
 func startREPL() {
+	pokecache.InitCache(5 * time.Second)
+	exploreCache := pokecache.NewCache(5 * time.Second)
 	commands = map[string]cliCommand{
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
 			callback:    commandHelp,
+		},
+		"map": {
+			name:        "map",
+			description: "Displays the next 20 locations",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the previous 20 locations",
+			callback:    commandMapB,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Displays the pokemon's in the area",
+			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Attempts to capture a pokemon",
+			callback:    commandCatch,
 		},
 		"exit": {
 			name:        "exit",
@@ -29,6 +54,9 @@ func startREPL() {
 		},
 	}
 
+	config := &Config{
+		pokedex: make(map[string]Pokemon),
+	}
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
@@ -38,10 +66,29 @@ func startREPL() {
 		splitText := strings.Fields(userText)
 		if len(splitText) > 0 {
 			firstWord := splitText[0]
+			areaName := ""
+			pokemonName := ""
 			command, ok := commands[firstWord]
 			if ok {
-				if err := command.callback(); err != nil {
-					fmt.Println(err)
+				switch firstWord {
+				case "explore":
+					if len(splitText) > 1 {
+						areaName = splitText[1]
+					}
+					if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
+						fmt.Println(err)
+					}
+				case "catch":
+					if len(splitText) > 1 {
+						pokemonName = splitText[1]
+					}
+					if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
+						fmt.Println(err)
+					}
+				default:
+					if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
+						fmt.Println(err)
+					}
 				}
 			} else {
 				fmt.Print("\nUnknown command\n")
@@ -58,13 +105,13 @@ func cleanInput(text string) []string {
 	return str
 }
 
-func commandExit() error {
+func commandExit(c *Config, exploreCache *pokecache.Cache, areaName string, pokemonName string) error {
 	fmt.Print("Closing the Pokedex... Goodbye!\n")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(c *Config, exploreCache *pokecache.Cache, areaName string, pokemonName string) error {
 	keys := []string{"help", "exit"}
 	fmt.Println("\nWelcome to the Pokedex!\nUsage:")
 	fmt.Println()
