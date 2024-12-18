@@ -47,6 +47,16 @@ func startREPL() {
 			description: "Attempts to capture a pokemon",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Lists the pokemon's detail",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Lists all the pokemons that have been caught",
+			callback:    commandPokedex,
+		},
 		"exit": {
 			name:        "exit",
 			description: "Exit the Pokedex",
@@ -70,25 +80,12 @@ func startREPL() {
 			pokemonName := ""
 			command, ok := commands[firstWord]
 			if ok {
-				switch firstWord {
-				case "explore":
-					if len(splitText) > 1 {
-						areaName = splitText[1]
-					}
-					if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
-						fmt.Println(err)
-					}
-				case "catch":
-					if len(splitText) > 1 {
-						pokemonName = splitText[1]
-					}
-					if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
-						fmt.Println(err)
-					}
-				default:
-					if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
-						fmt.Println(err)
-					}
+				if len(splitText) > 1 {
+					areaName = splitText[1]
+					pokemonName = splitText[1]
+				}
+				if err := command.callback(config, exploreCache, areaName, pokemonName); err != nil {
+					fmt.Println(err)
 				}
 			} else {
 				fmt.Print("\nUnknown command\n")
@@ -117,6 +114,14 @@ func commandHelp(c *Config, exploreCache *pokecache.Cache, areaName string, poke
 	fmt.Println()
 	for _, i := range keys {
 		fmt.Printf("%s: %s\n", commands[i].name, commands[i].description)
+	}
+	return nil
+}
+
+func commandPokedex(c *Config, exploreCache *pokecache.Cache, areaName string, pokemonName string) error {
+	fmt.Println("Your Pokedex:")
+	for _, i := range c.pokedex {
+		fmt.Printf(" - %s\n", i.Name)
 	}
 	return nil
 }

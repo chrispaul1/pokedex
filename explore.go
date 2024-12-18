@@ -24,6 +24,11 @@ type PokemonName struct {
 }
 
 func commandExplore(c *Config, exploreCache *pokecache.Cache, areaName string, pokemonName string) error {
+
+	if len(areaName) == 0 {
+		fmt.Println("Area name not given!")
+		return nil
+	}
 	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s", areaName)
 	cachedData, found := exploreCache.Get(areaName)
 	if found {
